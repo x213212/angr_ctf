@@ -28,16 +28,43 @@ import claripy
 import sys
 
 def main(argv):
-  path_to_binary = argv[1]
+  path_to_binary =  "/home/angr/angr-dev/test/17_angr_arbitrary_jump"
   project = angr.Project(path_to_binary)
 
   # Make a symbolic input that has a decent size to trigger overflow
   # (!)
-  symbolic_input = claripy.BVS("input", ???)
 
+  class ReplacementScanf(angr.SimProcedure):
+    # Hint: scanf("%u %20s")
+    def run(self, format_string,  input_address):
+      # %u
+      symbolic_input = claripy.BVS("input", 64 * 8)
+      
+      # The bitvector.chop(bits=n) function splits the bitvector into a Python
+      # list containing the bitvector in segments of n bits each. In this case,
+      # we are splitting them into segments of 8 bits (one byte.)
+      for char in symbolic_input.chop(bits=8):
+        # Ensure that each character in the string is printable. An interesting
+        # experiment, once you have a working solution, would be to run the code
+        # without constraining the characters to the printable range of ASCII.
+        # Even though the solution will technically work without this, it's more
+        # difficult to enter in a solution that contains character you can't
+        # copy, paste, or type into your terminal or the web form that checks 
+        # your solution.
+        # (!)
+        self.state.add_constraints(char >= 'A', char <= 'z')
+
+      # Warning: Endianness only applies to integers. If you store a string in
+      # memory and treat it as a little-endian integer, it will be backwards.
+      
+      self.state.memory.store(input_address, symbolic_input)
+      self.state.globals['solution'] = symbolic_input
+
+  scanf_symbol = "__isoc99_scanf"  # :string
+  project.hook_symbol(scanf_symbol, ReplacementScanf())
   # Create initial state and set stdin to the symbolic input
   initial_state = project.factory.entry_state(
-          stdin=symbolic_input,
+        
           add_options = {
               angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
               angr.options.SYMBOL_FILL_UNCONSTRAINED_REGISTERS
@@ -52,9 +79,9 @@ def main(argv):
   # (!)
   simulation = project.factory.simgr(
     initial_state,
-    save_unconstrained=???,
+    save_unconstrained=True,
     stashes={
-      'active' : [???],
+      'active' : [initial_state],
       'unconstrained' : [],
       'found' : [],
       'not_needed' : []
@@ -88,13 +115,13 @@ def main(argv):
   # by examining the simulation.unconstrained list.
   # (!)
   def has_unconstrained_to_check():
-    return ???
+    return len(simulation.unconstrained) > 0
 
   # The list simulation.active is a list of all states that can be explored
   # further.
   # (!)
   def has_active():
-    return ???
+    return len(simulation.active) > 0
 
   while (has_active() or has_unconstrained_to_check()) and (not has_found_solution()):
     for unconstrained_state in simulation.unconstrained:
@@ -119,20 +146,22 @@ def main(argv):
 
     # Constrain the instruction pointer to target the print_good function and
     # (!)
-    solution_state.add_constraints(solution_state.regs.eip == ???)
+    solution_state.add_constraints(solution_state.regs.eip == 0x42585249)
 
     # Constrain the symbolic input to fall within printable range (capital
     # letters) for the web UI.  Ensure UTF-8 encoding.
     # (!)
-    for byte in symbolic_input.chop(bits=8):
-      solution_state.add_constraints(
-              byte >= ???,
-              byte <= ???
-      )
+    # for byte in symbolic_input.chop(bits=8):
+    #   solution_state.add_constraints(
+    #           byte >= ???,
+    #           byte <= ???
+    #   )
 
     # Solve for the symbolic_input
-    solution = solution_state.solver.eval(symbolic_input,cast_to=bytes).decode()
-    print(solution)
+    # test =solution_state.state.globals['solution']
+    # print(test)
+    flag = solution_state.solver.eval(solution_state.globals["solution"], cast_to=bytes)
+    print(flag)
   else:
     raise Exception('Could not find the solution')
 
