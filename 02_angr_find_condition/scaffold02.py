@@ -14,7 +14,7 @@ import angr
 import sys
 
 def main(argv):
-  path_to_binary = argv[1]
+  path_to_binary = "/home/angr/angr-dev/test/02_angr_find_condition"
   project = angr.Project(path_to_binary)
   initial_state = project.factory.entry_state(
     add_options = { angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
@@ -30,7 +30,8 @@ def main(argv):
 
     # Return whether 'Good Job.' has been printed yet.
     # (!)
-    return ???  # :boolean
+    print(stdout_output)
+    return b'Good Job.\n' in stdout_output  # :boolean
 
   # Same as above, but this time check if the state should abort. If you return
   # False, Angr will continue to step the state. In this specific challenge, the
@@ -38,7 +39,8 @@ def main(argv):
   # "Try again."
   def should_abort(state):
     stdout_output = state.posix.dumps(sys.stdout.fileno())
-    return ???  # :boolean
+    print(stdout_output)
+    return b'Try again.\n' in stdout_output  # :boolean
 
   # Tell Angr to explore the binary and find any state that is_successful identfies
   # as a successful state by returning True.

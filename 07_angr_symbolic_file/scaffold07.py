@@ -22,10 +22,10 @@ import claripy
 import sys
 
 def main(argv):
-  path_to_binary = argv[1]
+  path_to_binary = "/home/angr/angr-dev/test/07_angr_symbolic_file"
   project = angr.Project(path_to_binary)
 
-  start_address = ???
+  start_address = 0x080488D6
   initial_state = project.factory.blank_state(
     addr=start_address,
     add_options = { angr.options.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
@@ -37,8 +37,8 @@ def main(argv):
   # Note: to read from the file, the binary calls
   # 'fread(buffer, sizeof(char), 64, file)'.
   # (!)
-  filename = ???  # :string
-  symbolic_file_size_bytes = ???
+  filename = "OJKSQYDP.txt"  # :string
+  symbolic_file_size_bytes = 0x40
 
   # Construct a bitvector for the password and then store it in the file's
   # backing memory. For example, imagine a simple file, 'hello.txt':
@@ -71,7 +71,7 @@ def main(argv):
   # beginning from address zero.
   # Set the content parameter to our BVS instance that holds the symbolic data.
   # (!)
-  password_file = angr.storage.SimFile(filename, content=???)
+  password_file = angr.storage.SimFile(filename, content=password)
   
   # Add the symbolic file we created to the symbolic filesystem.
   initial_state.fs.insert(filename, password_file)
@@ -80,11 +80,12 @@ def main(argv):
 
   def is_successful(state):
     stdout_output = state.posix.dumps(sys.stdout.fileno())
-    return ???
+    print(stdout_output)
+    return b'Good Job.' in stdout_output
 
   def should_abort(state):
     stdout_output = state.posix.dumps(sys.stdout.fileno())
-    return ???
+    return b'Try again.' in stdout_output  # :boolean
 
   simulation.explore(find=is_successful, avoid=should_abort)
 

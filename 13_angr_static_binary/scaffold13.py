@@ -32,3 +32,41 @@
 # can take a long time with Angr, so you should replace it with a SimProcedure.
 # angr.SIM_PROCEDURES['glibc']['__libc_start_main']
 # Note 'glibc' instead of 'libc'.
+
+import angr
+import claripy
+import sys
+
+
+def main(argv):
+    bin_path = "/home/angr/angr-dev/test/13_angr_static_binary"
+    project = angr.Project(bin_path)
+
+    initial_state = project.factory.entry_state()
+
+    simulation = project.factory.simgr(initial_state)
+
+    project.hook(0x804ED40, angr.SIM_PROCEDURES['libc']['printf']())
+    project.hook(0x804ED80, angr.SIM_PROCEDURES['libc']['scanf']())
+    project.hook(0x804F350, angr.SIM_PROCEDURES['libc']['puts']())
+    project.hook(0x8048D10, angr.SIM_PROCEDURES['glibc']['__libc_start_main']())
+
+
+    def is_successful(state):
+        stdout_output = state.posix.dumps(1)
+        return b"Good Job." in stdout_output
+
+    def should_abort(state):
+        stdout_output = state.posix.dumps(1)
+        return b"Try again." in stdout_output
+
+    simulation.explore(find = is_successful, avoid = should_abort)
+
+    if simulation.found:
+        solution_state = simulation.found[0]
+        print(solution_state.posix.dumps(0))
+    else:
+        raise(Exception("Could not find the solution"))
+
+if __name__ == "__main__":
+    main(sys.argv)

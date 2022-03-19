@@ -22,7 +22,9 @@ def generate(argv):
   with tempfile.NamedTemporaryFile(delete=False, suffix='.c', mode='w') as temp:
     temp.write(c_code)
     temp.seek(0)
-    os.system('gcc -fno-stack-protector -fno-pie -no-pie -m32 -o ' + output_file + ' ' + temp.name + ' 2>/dev/null')
+    print(temp.name)
+    print(output_file)
+    os.system('gcc -fno-stack-protector -fno-pie -no-pie -m32 -g -o ' + output_file + ' ' + temp.name + ' 2>/dev/null')
 
 if __name__ == '__main__':
   generate(sys.argv)

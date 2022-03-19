@@ -6,7 +6,7 @@ import claripy
 import sys
 
 def main(argv):
-  path_to_binary = argv[1]
+  path_to_binary = "/home/angr/angr-dev/test/11_angr_sim_scanf" 
   project = angr.Project(path_to_binary)
 
   initial_state = project.factory.entry_state(
@@ -17,36 +17,39 @@ def main(argv):
   class ReplacementScanf(angr.SimProcedure):
     # Finish the parameters to the scanf function. Hint: 'scanf("%u %u", ...)'.
     # (!)
-    def run(self, format_string, scanf0_address, ...):
+    def run(self, format_string, scanf0_address, scanf1_address):
       # Hint: scanf0_address is passed as a parameter, isn't it?
-      scanf0 = claripy.BVS('scanf0', ???)
-      ...
+      scanf0 = claripy.BVS('scanf0', 32)
+      scanf1 = claripy.BVS('scanf1', 32)
+      # ...
 
       # The scanf function writes user input to the buffers to which the 
       # parameters point.
       self.state.memory.store(scanf0_address, scanf0, endness=project.arch.memory_endness)
-      ...
+      self.state.memory.store(scanf1_address, scanf1, endness=project.arch.memory_endness)
+      # ...
 
       # Now, we want to 'set aside' references to our symbolic values in the
       # globals plugin included by default with a state. You will need to
       # store multiple bitvectors. You can either use a list, tuple, or multiple
       # keys to reference the different bitvectors.
       # (!)
-      self.state.globals['solution0'] = ???
-      ...
+      self.state.globals['solution'] = (scanf0,scanf1)
 
-  scanf_symbol = ???
+
+  scanf_symbol = "__isoc99_scanf"
   project.hook_symbol(scanf_symbol, ReplacementScanf())
 
   simulation = project.factory.simgr(initial_state)
 
   def is_successful(state):
     stdout_output = state.posix.dumps(sys.stdout.fileno())
-    return ???
+    print(stdout_output)
+    return b'Good Job.' in stdout_output
 
   def should_abort(state):
     stdout_output = state.posix.dumps(sys.stdout.fileno())
-    return ???
+    return b'Try again.' in stdout_output  # :boolean
 
   simulation.explore(find=is_successful, avoid=should_abort)
 
@@ -54,11 +57,13 @@ def main(argv):
     solution_state = simulation.found[0]
 
     # Grab whatever you set aside in the globals dict.
-    stored_solutions0 = solution_state.globals['solution0']
-    ...
-    solution = ???
+    stored_solutions0 = solution_state.globals['solution']
+    # for x in stored_solutions0:
+    solution = solution_state.solver.eval(stored_solutions0[0])
+    solution2 = solution_state.solver.eval(stored_solutions0[1])
+    # solution =stored_solutions0
 
-    print(solution)
+    print('{} {}'.format(solution, solution2))
   else:
     raise Exception('Could not find the solution')
 

@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define USERDEF "{{ userdef }}"
-#define LEN_USERDEF {{ len_userdef }}
+
 
 char msg[] =
   "{{ description }}";
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   printf("Enter the password: ");
   scanf("%8s", buffer);
 
-  for (int i=0; i<LEN_USERDEF; ++i) {
+  for (int i=0; i<14; ++i) {
     buffer[i] = complex_function(buffer[i], i);
   }
 

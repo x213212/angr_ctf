@@ -22,6 +22,7 @@
 # comment documents a part of the code that needs to be changed, it will be
 # marked with an exclamation point at the end, on a separate line (!).
 
+from ctypes import sizeof
 import angr
 import sys
 
@@ -32,7 +33,7 @@ def main(argv):
   # line as follows:
   # python ./scaffold00.py [binary]
   # (!)
-  path_to_binary = ???  # :string
+  path_to_binary ="/home/angr/angr-dev/test/00_angr_find"  # :string
   project = angr.Project(path_to_binary)
 
   # Tell Angr where to start executing (should it start from the main()
@@ -52,7 +53,7 @@ def main(argv):
   # This function will keep executing until it either finds a solution or it 
   # has explored every possible path through the executable.
   # (!)
-  print_good_address = ???  # :integer (probably in hexadecimal)
+  print_good_address =0x8048678  # :integer (probably in hexadecimal)
   simulation.explore(find=print_good_address)
 
   # Check that we have found a solution. The simulation.explore() method will
@@ -63,7 +64,7 @@ def main(argv):
     # The explore method stops after it finds a single state that arrives at the
     # target address.
     solution_state = simulation.found[0]
-
+    #  print(solution_state.posix)
     # Print the string that Angr wrote to stdin to follow solution_state. This 
     # is our solution.
     print(solution_state.posix.dumps(sys.stdin.fileno()).decode())
